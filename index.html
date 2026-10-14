@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日系六字乐队名生成器</title>
+<style>
+  :root {
+    --bg: #0e0f14;
+    --bg-2: #15161f;
+    --card: rgba(255,255,255,0.045);
+    --card-border: rgba(255,255,255,0.09);
+    --text: #e9e6e1;
+    --muted: #8b8a94;
+    --accent: #f0a35e;
+    --accent-soft: rgba(240,163,94,0.16);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #1d1f2b 0%, transparent 60%),
+      radial-gradient(900px 600px at 85% 110%, #1a1b26 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap { width: 100%; max-width: 700px; }
+
+  /* ---------- header ---------- */
+  header { text-align: center; margin-bottom: 34px; }
+  .kicker {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 0.35em; /* 抵消 letter-spacing 造成的右偏 */
+  }
+  h1 {
+    font-family: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: 0.06em;
+  }
+  .sub { margin-top: 10px; color: var(--muted); font-size: 14px; letter-spacing: 0.08em; }
+
+  /* ---------- card ---------- */
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 34px 30px 30px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: -40% -20%;
+    background: radial-gradient(400px 300px at 30% 0%, var(--accent-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ---------- moods ---------- */
+  .moods {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+  }
+  .mood {
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 999px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: color .18s, border-color .18s, background .18s, transform .12s;
+  }
+  .mood:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .mood:active { transform: scale(0.96); }
+  .mood.active {
+    color: #191612;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 6px 18px rgba(240,163,94,0.28);
+  }
+
+  /* ---------- name ---------- */
+  .stage {
+    position: relative;
+    text-align: center;
+    padding: 26px 0 22px;
+    min-height: 128px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .name {
+    font-family: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    font-weight: 600;
+    font-size: clamp(40px, 9vw, 60px);
+    letter-spacing: 0.1em;
+    line-height: 1.15;
+    cursor: pointer;
+    user-select: none;
+    transition: color .2s;
+    text-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .name:hover { color: var(--accent); }
+  .name.anim { animation: pop .38s cubic-bezier(.2,.7,.3,1.2); }
+  @keyframes pop {
+    0% { opacity: 0; transform: translateY(10px) scale(0.97); filter: blur(3px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  .breakdown {
+    margin-top: 14px;
+    font-size: 13px;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .breakdown.show { opacity: 1; }
+  .breakdown b { font-weight: 400; color: #c9c6c1; }
+
+  .hint { margin-top: 6px; font-size: 11px; color: #5c5b64; letter-spacing: 0.1em; }
+
+  /* ---------- actions ---------- */
+  .actions {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  button.btn {
+    font: inherit;
+    font-size: 15px;
+    letter-spacing: 0.12em;
+    border: none;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 13px 30px;
+    transition: transform .12s, box-shadow .2s, background .2s, color .2s;
+  }
+  button.btn:active { transform: translateY(1px) scale(0.98); }
+  .btn-primary {
+    color: #1a1713;
+    background: linear-gradient(180deg, #f7b678, #ee9c50);
+    box-shadow: 0 10px 26px rgba(240,163,94,0.32);
+  }
+  .btn-primary:hover { box-shadow: 0 14px 34px rgba(240,163,94,0.42); }
+  .btn-ghost {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
+
+  /* ---------- history ---------- */
+  .history { margin-top: 30px; }
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+  }
+  .history-clear {
+    background: none;
+    border: none;
+    color: #5c5b64;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+  }
+  .history-clear:hover { color: var(--text); }
+  .history-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .history-grid:empty::after {
+    content: "还没有生成过，点上面的按钮试试";
+    color: #4d4c55;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .chip {
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    color: #cfccc7;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+  }
+  .chip:hover { border-color: rgba(240,163,94,0.5); background: rgba(240,163,94,0.07); }
+  .chip:active { transform: scale(0.96); }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(20,21,28,0.92);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    padding: 10px 20px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { margin-top: 40px; color: #4d4c55; font-size: 12px; letter-spacing: 0.06em; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="kicker">NAMAE · GENERATOR</span>
+      <h1>六字乐队名生成器</h1>
+      <p class="sub">意义不明，但感觉对了。</p>
+    </header>
+
+    <section class="card">
+      <div class="moods" id="moods"></div>
+
+      <div class="stage">
+        <div class="name" id="name" title="点击复制">时间遗忘车站</div>
+        <div class="breakdown" id="breakdown"></div>
+        <div class="hint">概念 × 修饰 × 地点 · 点击名字可复制</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-gen">再生成一个</button>
+        <button class="btn btn-ghost" id="btn-copy">复制</button>
+      </div>
+    </section>
+
+    <section class="history">
+      <div class="history-head">
+        <span>最近生成</span>
+        <button class="history-clear" id="btn-clear">清空</button>
+      </div>
+      <div class="history-grid" id="history"></div>
+    </section>
+
+    <footer>概念 × 修饰 × 地点 ＝ 日系乐队名</footer>
+  </div>
+
+  <div class="toast" id="toast">已复制</div>
+
+<script>
+(function () {
+  // ---------- 词库 ----------
+  // 每个词：w = 词语（两字），m = 氛围标签
+  // 氛围：青春 / 科幻 / 忧郁 / 梦幻 / 都市
+  var WORDS = {
+    first: [
+      { w: "时间", m: ["忧郁", "科幻"] },
+      { w: "未来", m: ["科幻", "青春"] },
+      { w: "记忆", m: ["忧郁", "青春"] },
+      { w: "黄昏", m: ["忧郁", "青春"] },
+      { w: "宇宙", m: ["科幻"] },
+      { w: "银河", m: ["科幻", "梦幻"] },
+      { w: "梦境", m: ["梦幻"] },
+      { w: "幻影", m: ["梦幻"] },
+      { w: "少年", m: ["青春"] },
+      { w: "深夜", m: ["忧郁"] },
+      { w: "夏日", m: ["青春"] },
+      { w: "青春", m: ["青春"] },
+      { w: "透明", m: ["梦幻", "忧郁"] },
+      { w: "孤独", m: ["忧郁"] },
+      { w: "信号", m: ["科幻"] },
+      { w: "泡沫", m: ["梦幻"] },
+      { w: "蜃楼", m: ["梦幻"] },
+      { w: "无声", m: ["忧郁"] },
+      { w: "雨天", m: ["忧郁", "青春"] },
+      { w: "废墟", m: ["忧郁", "都市"] },
+      { w: "樱花", m: ["青春"] },
+      { w: "台风", m: ["青春", "都市"] },
+      { w: "电波", m: ["科幻"] },
+      { w: "恒星", m: ["科幻"] },
+      { w: "末班", m: ["都市", "忧郁"] },
+      { w: "静寂", m: ["忧郁"] },
+      { w: "微光", m: ["梦幻", "忧郁"] },
+      { w: "零度", m: ["科幻", "忧郁"] },
+      { w: "残夏", m: ["青春"] },
+      { w: "雨音", m: ["忧郁", "青春"] },
+      { w: "灰羽", m: ["梦幻"] },
+      { w: "霓虹", m: ["都市", "科幻"] },
+      { w: "地下", m: ["都市"] },
+      { w: "街角", m: ["都市", "青春"] },
+      { w: "逆光", m: ["青春", "梦幻"] },
+      { w: "白昼", m: ["青春", "梦幻"] },
+      { w: "深海", m: ["梦幻", "科幻"] },
+      { w: "月面", m: ["科幻"] },
+      { w: "原点", m: ["科幻", "忧郁"] },
+      { w: "边界", m: ["科幻", "都市"] }
+    ],
+    second: [
+      { w: "遗忘", m: ["忧郁"] },
+      { w: "漂流", m: ["梦幻", "科幻"] },
+      { w: "停滞", m: ["忧郁"] },
+      { w: "失重", m: ["科幻"] },
+      { w: "循环", m: ["科幻", "梦幻"] },
+      { w: "旋转", m: ["梦幻", "青春"] },
+      { w: "溶解", m: ["梦幻"] },
+      { w: "残响", m: ["忧郁", "梦幻"] },
+      { w: "逆行", m: ["青春", "都市"] },
+      { w: "潜行", m: ["科幻", "都市"] },
+      { w: "褪色", m: ["忧郁", "青春"] },
+      { w: "冻结", m: ["科幻", "忧郁"] },
+      { w: "燃烧", m: ["青春"] },
+      { w: "折射", m: ["科幻"] },
+      { w: "扩散", m: ["科幻"] },
+      { w: "坠落", m: ["忧郁", "科幻"] },
+      { w: "悬浮", m: ["科幻", "梦幻"] },
+      { w: "回响", m: ["梦幻", "忧郁"] },
+      { w: "蒸发", m: ["梦幻"] },
+      { w: "重合", m: ["科幻", "梦幻"] },
+      { w: "蔓延", m: ["忧郁", "都市"] },
+      { w: "缺席", m: ["忧郁", "青春"] },
+      { w: "停格", m: ["青春", "梦幻"] },
+      { w: "逃逸", m: ["科幻", "青春"] },
+      { w: "迷路", m: ["青春", "都市"] },
+      { w: "失眠", m: ["忧郁"] },
+      { w: "独白", m: ["忧郁"] },
+      { w: "倒带", m: ["青春", "梦幻"] },
+      { w: "加速", m: ["科幻", "青春"] },
+      { w: "漫游", m: ["科幻", "梦幻", "都市"] },
+      { w: "穿梭", m: ["科幻", "青春", "都市"] },
+      { w: "徘徊", m: ["忧郁", "都市"] },
+      { w: "停靠", m: ["都市", "科幻"] },
+      { w: "环绕", m: ["科幻", "都市"] },
+      { w: "漂浮", m: ["梦幻", "科幻"] },
+      { w: "慢放", m: ["忧郁", "梦幻"] }
+    ],
+    third: [
+      { w: "车站", m: ["忧郁", "都市"] },
+      { w: "基地", m: ["科幻", "青春"] },
+      { w: "公园", m: ["青春", "都市"] },
+      { w: "商店", m: ["都市"] },
+      { w: "电台", m: ["科幻", "都市"] },
+      { w: "工厂", m: ["都市", "科幻"] },
+      { w: "房间", m: ["忧郁", "青春"] },
+      { w: "天台", m: ["青春", "都市"] },
+      { w: "书店", m: ["忧郁", "青春"] },
+      { w: "超市", m: ["都市", "青春"] },
+      { w: "隧道", m: ["都市", "忧郁"] },
+      { w: "港口", m: ["都市", "忧郁"] },
+      { w: "码头", m: ["都市"] },
+      { w: "钟楼", m: ["忧郁", "梦幻"] },
+      { w: "影院", m: ["都市", "梦幻"] },
+      { w: "乐园", m: ["青春", "梦幻"] },
+      { w: "教堂", m: ["忧郁", "梦幻"] },
+      { w: "泳池", m: ["青春"] },
+      { w: "温室", m: ["梦幻"] },
+      { w: "月台", m: ["忧郁", "青春"] },
+      { w: "灯塔", m: ["梦幻", "科幻"] },
+      { w: "荒原", m: ["忧郁"] },
+      { w: "群岛", m: ["梦幻", "科幻"] },
+      { w: "轨道", m: ["科幻"] },
+      { w: "广场", m: ["都市", "青春"] },
+      { w: "剧场", m: ["梦幻", "都市"] },
+      { w: "标本", m: ["梦幻", "忧郁"] },
+      { w: "档案", m: ["科幻", "忧郁"] },
+      { w: "仓库", m: ["都市", "忧郁"] },
+      { w: "国道", m: ["都市", "青春"] }
+    ]
+  };
+
+  var MOODS = ["全部", "青春", "科幻", "忧郁", "梦幻", "都市"];
+  var currentMood = "全部";
+  var last = "";          // 上一次生成的名字，避免连续重复
+  var lastCombo = "";     // 上一次的三个词组合
+
+  var elName = document.getElementById("name");
+  var elBreakdown = document.getElementById("breakdown");
+  var elMoods = document.getElementById("moods");
+  var elHistory = document.getElementById("history");
+  var elToast = document.getElementById("toast");
+  var btnGen = document.getElementById("btn-gen");
+  var btnCopy = document.getElementById("btn-copy");
+  var btnClear = document.getElementById("btn-clear");
+
+  var HISTORY_KEY = "bandname_history_v1";
+
+  function pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function filterByMood(list, mood) {
+    if (mood === "全部") return list;
+    return list.filter(function (w) { return w.m.indexOf(mood) !== -1; });
+  }
+
+  function generate() {
+    var f = filterByMood(WORDS.first, currentMood);
+    var s = filterByMood(WORDS.second, currentMood);
+    var t = filterByMood(WORDS.third, currentMood);
+
+    var a, b, c, combo;
+    for (var i = 0; i < 12; i++) {
+      a = pick(f); b = pick(s); c = pick(t);
+      combo = a.w + "|" + b.w + "|" + c.w;
+      if (combo !== lastCombo) break;
+    }
+    lastCombo = combo;
+    last = a.w + b.w + c.w;
+
+    render();
+  }
+
+  function render() {
+    elName.classList.remove("anim");
+    void elName.offsetWidth; // 重置动画
+    elName.textContent = last;
+    elName.classList.add("anim");
+
+    var parts = lastCombo.split("|");
+    elBreakdown.innerHTML = "<b>" + parts[0] + "</b>・" +
+                            "<b>" + parts[1] + "</b>・" +
+                            "<b>" + parts[2] + "</b>";
+    elBreakdown.classList.add("show");
+
+    pushHistory(last);
+  }
+
+  // ---------- 历史记录 ----------
+  function loadHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function pushHistory(name) {
+    var list = loadHistory();
+    list = list.filter(function (n) { return n !== name; });
+    list.unshift(name);
+    list = list.slice(0, 15);
+    saveHistory(list);
+    renderHistory(list);
+  }
+  function renderHistory(list) {
+    elHistory.innerHTML = "";
+    list.forEach(function (n) {
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = n;
+      chip.title = "点击复制";
+      chip.addEventListener("click", function () { copyText(n); });
+      elHistory.appendChild(chip);
+    });
+  }
+
+  // ---------- 复制 ----------
+  function copyText(text) {
+    var done = function () { showToast(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text);
+      done();
+    }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  var toastTimer;
+  function showToast() {
+    elToast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { elToast.classList.remove("show"); }, 1400);
+  }
+
+  // ---------- 氛围选择 ----------
+  function renderMoods() {
+    MOODS.forEach(function (m) {
+      var btn = document.createElement("button");
+      btn.className = "mood" + (m === currentMood ? " active" : "");
+      btn.textContent = m;
+      btn.addEventListener("click", function () {
+        currentMood = m;
+        renderMoods();
+        generate();
+      });
+      elMoods.appendChild(btn);
+    });
+  }
+
+  // ---------- 事件 ----------
+  btnGen.addEventListener("click", generate);
+  btnCopy.addEventListener("click", function () { copyText(last); });
+  elName.addEventListener("click", function () { copyText(last); });
+  btnClear.addEventListener("click", function () {
+    saveHistory([]);
+    renderHistory([]);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" && document.activeElement !== btnGen) {
+      e.preventDefault();
+      generate();
+    }
+  });
+
+  // ---------- 初始化 ----------
+  renderMoods();
+  renderHistory(loadHistory());
+  generate();
+})();
+</script>
+</body>
+</html>
